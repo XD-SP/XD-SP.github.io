@@ -2,503 +2,959 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>订单查询</title>
-<meta name="description" content="输入订单号，打开对应的订单页面">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="format-detection" content="telephone=no,email=no,address=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0d1117">
-<meta property="og:title" content="订单查询">
-<meta property="og:description" content="输入订单号查看订单详情">
-<meta property="og:type" content="website">
+<meta name="description" content="扫描板件条码或输入订单号，查看 3D 模型与爆炸图">
+<title>订单查询</title>
 <style>
 :root{
-  --bg:#0d1117; --bg-soft:#161b22; --card:#171c24; --line:#2a313c;
-  --text:#e6edf3; --text-dim:#9aa7b4; --accent:#3b82f6; --accent-soft:#1d3b6e;
-  --ok:#2ea043; --warn:#d29922; --shadow:0 8px 28px rgba(0,0,0,.45);
+  --bg:#ffffff; --surface:#f6f8fa; --surface2:#ffffff;
+  --border:#d0d7de; --border2:#d8dee4;
+  --text:#1f2328; --muted:#656d76; --faint:#8c959f;
+  --accent:#0969da; --accent-text:#ffffff; --accent-soft:#ddf4ff;
+  --ok:#1a7f37; --warn:#9a6700; --warn-soft:#fff8c5;
+  --shadow:0 1px 3px rgba(31,35,40,.09);
+  --radius:10px;
 }
-html[data-theme="light"]{
-  --bg:#f6f8fa; --bg-soft:#ffffff; --card:#ffffff; --line:#d8dee4;
-  --text:#1f2328; --text-dim:#656d76; --accent:#0969da; --accent-soft:#ddf0ff;
-  --ok:#1a7f37; --warn:#9a6700; --shadow:0 8px 24px rgba(31,35,40,.10);
+html[data-theme="dark"]{
+  --bg:#0d1117; --surface:#161b22; --surface2:#0d1117;
+  --border:#30363d; --border2:#21262d;
+  --text:#e6edf3; --muted:#8b949e; --faint:#6e7681;
+  --accent:#1f6feb; --accent-text:#ffffff; --accent-soft:#0d2a57;
+  --ok:#3fb950; --warn:#d29922; --warn-soft:#2b2410;
+  --shadow:0 1px 3px rgba(0,0,0,.4);
 }
 *{box-sizing:border-box}
+html,body{margin:0;padding:0}
 body{
-  margin:0; background:var(--bg); color:var(--text);
-  font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Helvetica,Arial,sans-serif;
-  -webkit-font-smoothing:antialiased;
+  background:var(--bg); color:var(--text);
+  font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  -webkit-text-size-adjust:100%;
+  padding-bottom:env(safe-area-inset-bottom);
 }
-a{color:var(--accent);text-decoration:none}
-a:hover{text-decoration:underline}
-.wrap{max-width:920px;margin:0 auto;padding:28px 20px 60px}
+.wrap{max-width:760px;margin:0 auto;padding:20px 16px 60px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+h1{font-size:17px;font-weight:600;margin:0}
+.sub{font-size:12px;color:var(--muted);margin-top:2px}
+.icon-btn{
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  color:var(--muted);width:36px;height:36px;cursor:pointer;font-size:15px;
+  display:flex;align-items:center;justify-content:center;flex:none;padding:0;
+}
+.icon-btn:active{background:var(--border2)}
 
-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:26px}
-.brand{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:600}
-.brand .dot{width:10px;height:10px;border-radius:50%;background:var(--accent)}
-.tbtn{
-  background:var(--bg-soft);color:var(--text-dim);border:1px solid var(--line);
-  border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px;
-}
-.tbtn:hover{color:var(--text);border-color:var(--accent)}
-
-h1.title{font-size:26px;margin:34px 0 6px;font-weight:650;letter-spacing:.5px}
-p.sub{margin:0 0 22px;color:var(--text-dim);font-size:14px}
-
-.stats{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;font-size:13px}
-.chip{
-  background:var(--bg-soft);border:1px solid var(--line);color:var(--text-dim);
-  border-radius:999px;padding:4px 12px;
-}
-.chip b{color:var(--text);font-weight:600}
-.chip.warn{border-color:var(--warn);color:var(--warn)}
-
-.searchbox{position:relative;display:flex;gap:10px}
-.searchbox input{
-  flex:1;min-width:0;padding:14px 16px;font-size:16px;
-  background:var(--bg-soft);color:var(--text);
-  border:1px solid var(--line);border-radius:12px;outline:none;
-  transition:border-color .15s,box-shadow .15s;
-}
-.searchbox input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.18)}
-.searchbox input::placeholder{color:var(--text-dim)}
-.searchbox button{
-  padding:0 22px;font-size:15px;font-weight:600;cursor:pointer;
-  background:var(--accent);color:#fff;border:0;border-radius:12px;
-}
-.searchbox button:hover{filter:brightness(1.08)}
-.searchbox button:disabled{opacity:.6;cursor:not-allowed}
-
-.sug{
-  position:absolute;left:0;right:0;top:calc(100% + 8px);z-index:20;
-  background:var(--bg-soft);border:1px solid var(--line);border-radius:12px;
-  box-shadow:var(--shadow);max-height:320px;overflow:auto;display:none;
-}
-.sug.show{display:block}
-.sug div{
-  padding:11px 16px;cursor:pointer;display:flex;justify-content:space-between;
-  gap:12px;align-items:center;border-bottom:1px solid var(--line);font-size:14px;
-}
-.sug div:last-child{border-bottom:0}
-.sug div.active,.sug div:hover{background:var(--accent-soft)}
-.sug div small{color:var(--text-dim);font-size:12px;flex:none}
-
-section.results{margin-top:30px}
-.rtitle{font-size:13px;color:var(--text-dim);margin-bottom:12px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
-.card{
-  background:var(--card);border:1px solid var(--line);border-radius:12px;
-  padding:14px 16px;display:flex;flex-direction:column;gap:10px;
-}
-.card .no{
+.search{display:flex;gap:8px;margin-bottom:6px}
+.field{position:relative;flex:1}
+input[type=text]{
+  width:100%;padding:13px 36px 13px 13px;font-size:16px;
+  border:1px solid var(--border);border-radius:10px;background:var(--surface2);color:var(--text);
   font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-  font-size:15px;font-weight:600;color:var(--text);word-break:break-all;
-  text-decoration:none;display:block;
+  -webkit-appearance:none;appearance:none;
 }
-.card .ops{display:flex;gap:18px;font-size:13px;align-items:center}
-.card .ops a,.card .ops button{
-  background:none;border:0;padding:6px 0;cursor:pointer;font-size:13px;
-  color:var(--accent);text-decoration:none;font-family:inherit;
+input[type=text]:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.clrbtn{
+  position:absolute;right:6px;top:50%;transform:translateY(-50%);
+  background:none;border:0;color:var(--faint);font-size:20px;cursor:pointer;padding:4px 8px;line-height:1;
 }
-.card .ops a:hover,.card .ops button:hover{text-decoration:underline}
+.primary-btn{
+  background:var(--accent);color:var(--accent-text);border:0;border-radius:10px;
+  padding:0 18px;font-size:15px;font-weight:500;cursor:pointer;flex:none;height:48px;
+}
+.hint{font-size:12px;color:var(--faint);margin:0 0 16px}
+.hint b{color:var(--muted);font-weight:500}
 
-.empty{
-  border:1px dashed var(--line);border-radius:12px;padding:34px 20px;
-  text-align:center;color:var(--text-dim);font-size:14px;
+.card{
+  background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px;margin-bottom:12px;box-shadow:var(--shadow);
 }
-.empty code{color:var(--text);font-family:ui-monospace,Menlo,Consolas,monospace}
+.oid{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:17px;font-weight:600;word-break:break-all;margin:0 0 4px;
+}
+.meta{font-size:12px;color:var(--muted);margin-bottom:14px}
+.actions{display:flex;gap:9px;flex-wrap:wrap}
+.act{
+  flex:1;min-width:130px;text-align:center;padding:12px 10px;border-radius:9px;
+  border:1px solid var(--border);background:var(--surface);color:var(--text);
+  font-size:14px;font-weight:500;cursor:pointer;text-decoration:none;line-height:1.4;
+}
+.act small{display:block;font-weight:400;font-size:11px;color:var(--muted);margin-top:2px}
+.act.k{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+.act.k small{color:rgba(255,255,255,.75)}
+.act:active{opacity:.85}
 
-#previewBox{margin-top:28px;display:none}
-#previewBox.show{display:block}
-#previewBox .bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-#previewBox iframe{
-  width:100%;height:min(72vh,720px);background:#fff;
-  border:1px solid var(--line);border-radius:12px;display:block;
+.partbar{
+  background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--radius);
+  padding:12px 14px;margin-bottom:12px;font-size:13px;
 }
-.recent{margin-top:26px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.recent span{font-size:13px;color:var(--text-dim);margin-right:2px}
-.recent a{
-  font-size:13px;background:var(--bg-soft);border:1px solid var(--line);
-  color:var(--text-dim);border-radius:999px;padding:4px 12px;cursor:pointer;
+.partbar .pn{font-size:15px;font-weight:600;margin-bottom:6px}
+.partbar .kv{color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 14px}
+.partbar .kv span b{color:var(--text);font-weight:500}
+
+.empty{text-align:center;padding:44px 16px;color:var(--muted)}
+.empty .big{font-size:15px;color:var(--text);margin-bottom:6px;font-weight:500}
+.empty code{
+  background:var(--surface);padding:2px 6px;border-radius:5px;font-size:13px;
+  font-family:ui-monospace,Menlo,Consolas,monospace;
 }
-.recent a:hover{border-color:var(--accent);color:var(--text)}
-footer{margin-top:44px;color:var(--text-dim);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
-@media(max-width:560px){
-  h1.title{font-size:22px;margin-top:24px}
-  .searchbox{flex-direction:column}
-  .searchbox button{padding:13px 0}
+.tip-bar{
+  background:var(--warn-soft);border:1px solid var(--warn);color:var(--warn);
+  border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:12px;
 }
+
+/* ---------- 列表 ---------- */
+.list{margin:0;padding:0;list-style:none}
+.list li{
+  background:var(--surface2);border:1px solid var(--border);border-radius:9px;
+  padding:12px 14px;margin-bottom:8px;
+}
+.list .row1{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.list .oid{font-size:15px;margin:0}
+.list .mini{font-size:12px;color:var(--muted);flex:none}
+.list .acts{margin-top:10px}
+.act.sm{padding:8px 10px;font-size:13px;min-width:0}
+
+/* ---------- 覆盖层通用 ---------- */
+.overlay{
+  position:absolute;inset:0;background:var(--bg);z-index:50;
+  display:none;flex-direction:column;
+}
+.overlay.show{display:flex}
+.ov-head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:12px 14px;border-bottom:1px solid var(--border);background:var(--surface2);flex:none;
+}
+.ov-head h2{font-size:15px;font-weight:600;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ov-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px}
+
+/* ---------- 爆炸图浏览 ---------- */
+.tabs{display:flex;gap:7px;overflow-x:auto;padding-bottom:10px;-webkit-overflow-scrolling:touch}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  flex:none;padding:7px 13px;border-radius:20px;border:1px solid var(--border);
+  background:var(--surface2);color:var(--muted);font-size:13px;cursor:pointer;white-space:nowrap;
+}
+.tab.on{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+.pics{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pics figure{margin:0}
+.pics .ph{
+  background:var(--surface);border:1px solid var(--border2);border-radius:8px;
+  overflow:hidden;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;
+}
+.pics img{width:100%;height:100%;object-fit:contain;display:block;background:#fff}
+.pics figcaption{font-size:12px;color:var(--muted);margin-top:6px;text-align:center}
+@media(min-width:560px){.pics{grid-template-columns:1fr 1fr 1fr}}
+
+/* ---------- 大图查看 ---------- */
+#lb{position:absolute;inset:0;background:#000;z-index:80;display:none;flex-direction:column}
+#lb.show{display:flex}
+#lb .bar{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;color:#fff;flex:none}
+#lb .bar button{background:rgba(255,255,255,.14);border:0;color:#fff;border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer}
+#lb .stage{flex:1;display:flex;align-items:center;justify-content:center;padding:8px;overflow:hidden}
+#lb img{max-width:100%;max-height:100%;object-fit:contain;background:#fff}
+#lb .cap{color:#fff;text-align:center;padding:10px 14px 18px;font-size:13px;flex:none}
+#lb .nav{display:flex;gap:10px;justify-content:center;padding:0 14px 14px;flex:none}
+#lb .nav button{
+  background:rgba(255,255,255,.14);border:0;color:#fff;border-radius:8px;
+  padding:11px 20px;font-size:14px;cursor:pointer;min-width:88px;
+}
+
+/* ---------- 扫码 ---------- */
+#scanPanel .cam{position:relative;flex:1;background:#000;overflow:hidden}
+#scanVideo{width:100%;height:100%;object-fit:cover}
+#scanPanel .frame{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:76%;max-width:340px;aspect-ratio:2/1;border:2px solid rgba(255,255,255,.85);
+  border-radius:10px;box-shadow:0 0 0 9999px rgba(0,0,0,.42);
+}
+#scanPanel .msg{padding:14px;text-align:center;color:#fff;font-size:13px;background:#000;flex:none}
+#scanPanel .msg.err{color:#ff9c9c}
 </style>
 </head>
 <body>
 <div class="wrap">
-
   <header>
-    <div class="brand"><i class="dot"></i><span>订单查询</span></div>
-    <button class="tbtn" id="themeBtn" type="button">切换主题</button>
+    <div>
+      <h1>订单查询</h1>
+      <div class="sub">扫码或输入订单号，查看 3D 模型与爆炸图</div>
+    </div>
+    <button class="icon-btn" id="themeBtn" type="button" title="切换主题" aria-label="切换主题">◐</button>
   </header>
 
-  <h1 class="title">输入订单号，打开订单页面</h1>
-  <p class="sub">订单号就是文件名，支持前后模糊匹配，回车即可查询。</p>
-
-  <div class="stats" id="stats"></div>
-
-  <form class="searchbox" id="form" autocomplete="off">
-    <input id="q" type="search" placeholder="例如：DD20261012001 或 1001" aria-label="订单号">
-    <button type="submit" id="btn">查询</button>
-    <div class="sug" id="sug"></div>
-  </form>
-
-  <section class="results">
-    <div class="rtitle" id="rtitle" hidden></div>
-    <div class="grid" id="grid"></div>
-    <div class="empty" id="empty" hidden></div>
-  </section>
-
-  <div id="previewBox">
-    <div class="bar">
-      <b id="previewName" style="font-size:14px"></b>
-      <button class="tbtn" id="previewClose" type="button">关闭预览</button>
+  <form class="search" id="form" autocomplete="off">
+    <div class="field">
+      <input type="text" id="q" placeholder="订单号 / 板件条码" autocomplete="off"
+             autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search">
+      <button type="button" class="clrbtn" id="clrBtn" aria-label="清空" hidden>×</button>
     </div>
-    <iframe id="preview" title="订单预览" referrerpolicy="no-referrer"></iframe>
+    <button type="button" class="primary-btn" id="scanBtn">扫码</button>
+  </form>
+  <p class="hint">支持 <b>摄像头扫码</b>、<b>USB 扫码枪</b>（即用即扫，无需点输入框）、<b>手动输入</b>。板件条码会自动定位所属订单。</p>
+
+  <div id="tip"></div>
+  <div id="partInfo"></div>
+  <div id="single"></div>
+  <ul class="list" id="grid"></ul>
+  <div class="empty" id="empty" hidden></div>
+  <div id="stat" class="hint" style="margin-top:18px"></div>
+</div>
+
+<!-- 爆炸图浏览 -->
+<div class="overlay" id="viewer" aria-label="爆炸图浏览">
+  <div class="ov-head">
+    <h2 id="viewerTitle">爆炸图</h2>
+    <button class="icon-btn" type="button" id="viewerClose" aria-label="关闭">×</button>
   </div>
+  <div class="ov-body">
+    <div class="tabs" id="viewerTabs"></div>
+    <div class="pics" id="viewerGrid"></div>
+  </div>
+</div>
 
-  <div class="recent" id="recentBox" hidden></div>
+<!-- 大图 -->
+<div id="lb" aria-label="查看大图">
+  <div class="bar">
+    <span id="lbIdx"></span>
+    <button type="button" id="lbClose">关闭</button>
+  </div>
+  <div class="stage"><img id="lbImg" alt=""></div>
+  <div class="cap" id="lbCap"></div>
+  <div class="nav">
+    <button type="button" id="lbPrev">← 上一张</button>
+    <button type="button" id="lbNext">下一张 →</button>
+  </div>
+</div>
 
-  <footer>
-    订单文件放在仓库的 <code>orders/</code> 目录下，文件名即订单号。<br>
-    新增文件后会自动生成清单，无需改动本页。
-  </footer>
+<!-- 扫码 -->
+<div class="overlay" id="scanPanel" aria-label="扫码">
+  <div class="ov-head">
+    <h2>扫描条码</h2>
+    <button class="icon-btn" type="button" id="scanClose" aria-label="关闭">×</button>
+  </div>
+  <div class="cam">
+    <video id="scanVideo" playsinline muted autoplay></video>
+    <div class="frame"></div>
+  </div>
+  <div class="msg" id="scanMsg">正在启动摄像头…</div>
 </div>
 
 <script>
 (function () {
   'use strict';
 
-  /* ============ 配置：改这里就够了 ============ */
   var CONFIG = {
-    orderDir:   'orders/',            // 订单 HTML 存放目录（相对本页）
-    manifest:   'orders/index.json',  // 自动生成的清单文件
-    exts:       ['.html', '.htm'],    // 可能的后缀
+    orderDir:   'orders/',
+    manifest:   'orders/index.json',
     recentKey:  'order_query_recent',
     themeKey:   'order_query_theme',
     maxRecent:  8,
-    maxSuggest: 12
+    maxList:    40,
+    tailLen:    4,     // 板件条码尾部的板件序号位数
+    scanMs:     280    // 摄像头解码间隔
   };
-  /* ========================================== */
 
-  var $ = function (id) { return document.getElementById(id); };
-  var qEl = $('q'), sugEl = $('sug'), gridEl = $('grid'), emptyEl = $('empty'),
-      rtitleEl = $('rtitle'), statsEl = $('stats'), recentEl = $('recentBox'),
-      previewBox = $('previewBox'), previewFrame = $('preview'), previewName = $('previewName');
+  var state = {
+    orders:    [],
+    loaded:    false,
+    mode:      'init',
+    ver:       '',
+    recent:    [],
+    csvCache:  {},
+    current:   null,
+    viewOrder: null,
+    viewGroup: '',
+    lb:        { list: [], i: 0 }
+  };
 
-  // mode: 'init' | 'manifest' | 'probe'
-  var state = { mode: 'init', index: [], recent: [], ver: '' };
+  /* ---------------- 基础工具 ---------------- */
+  function $(id) { return document.getElementById(id); }
 
-  /* ---------- 工具 ---------- */
-  // 归一化：去扩展名、去分隔符、转小写，让 "DD-1001" 和 "dd1001" 等价
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function escapeAttr(s) { return escapeHtml(s); }
+
+  // 路径逐段编码：文件名含中文（柜0_装配.png），但 / 要保持为分隔符
+  function pathUrl(p) {
+    return String(p).split('/').map(encodeURIComponent).join('/');
+  }
+  function fileUrl(p) {
+    var u = CONFIG.orderDir + pathUrl(p);
+    if (state.ver) u += '?v=' + encodeURIComponent(state.ver);
+    return u;
+  }
   function normalize(s) {
     return String(s == null ? '' : s)
       .replace(/\.(html?|htm)$/i, '')
       .replace(/[\s\-_#/\\.]/g, '')
       .toLowerCase();
   }
-  function displayName(file) {
-    return String(file).replace(/\.(html?|htm)$/i, '');
-  }
-  // 加 ?v= 版本号：微信内置浏览器缓存很重，订单文件更新后必须能拿到新内容
-  function fileUrl(file) {
-    var url = CONFIG.orderDir + encodeURIComponent(file);
-    if (state.ver) url += '?v=' + encodeURIComponent(state.ver);
-    return url;
-  }
-  function readStore(key, fallback) {
-    try {
-      var v = localStorage.getItem(key);
-      return v ? JSON.parse(v) : fallback;
-    } catch (e) { return fallback; }
-  }
-  function writeStore(key, val) {
-    try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+  function els(tag, cls, txt) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (txt != null) e.textContent = txt;
+    return e;
   }
 
-  /* ---------- 主题 ---------- */
+  /* ---------------- 主题 ---------------- */
   function applyTheme(t) {
     document.documentElement.setAttribute('data-theme', t);
-    writeStore(CONFIG.themeKey, t);
   }
-  applyTheme(readStore(CONFIG.themeKey, 'dark') === 'light' ? 'light' : 'dark');
+  function initTheme() {
+    var saved = null;
+    try { saved = localStorage.getItem(CONFIG.themeKey); } catch (e) {}
+    if (!saved) {
+      var m = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+      saved = m && m.matches ? 'dark' : 'light';
+    }
+    applyTheme(saved);
+  }
+  $('themeBtn').addEventListener('click', function () {
+    var cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    applyTheme(cur);
+    try { localStorage.setItem(CONFIG.themeKey, cur); } catch (e) {}
+  });
 
-  /* ---------- 清单加载 ---------- */
-  function buildIndex(files, ver) {
-    var seen = {}, list = [];
-    (files || []).forEach(function (name) {
-      if (!name || seen[name]) return;
-      seen[name] = 1;
-      list.push({ file: name, key: normalize(name), label: displayName(name) });
-    });
-    list.sort(function (a, b) { return a.label.localeCompare(b.label, 'zh-Hans-CN'); });
-    state.index = list;
-    state.ver = ver || String(Date.now());
-    state.mode = 'manifest';
+  /* ---------------- 最近查询 ---------------- */
+  function readRecent() {
+    try {
+      var v = JSON.parse(localStorage.getItem(CONFIG.recentKey) || '[]');
+      return Array.isArray(v) ? v.slice(0, CONFIG.maxRecent) : [];
+    } catch (e) { return []; }
+  }
+  function pushRecent(id) {
+    if (!id) return;
+    state.recent = [id].concat(state.recent.filter(function (x) { return x !== id; })).slice(0, CONFIG.maxRecent);
+    try { localStorage.setItem(CONFIG.recentKey, JSON.stringify(state.recent)); } catch (e) {}
   }
 
+  /* ---------------- 载入清单 ---------------- */
   function loadManifest() {
-    if (typeof fetch !== 'function') { state.mode = 'probe'; return Promise.resolve(); }
     return fetch(CONFIG.manifest, { cache: 'no-store' })
-      .then(function (res) { if (!res.ok) throw new Error('404'); return res.json(); })
+      .then(function (r) { if (!r.ok) throw new Error('清单不可用 ' + r.status); return r.json(); })
       .then(function (data) {
-        var files = Array.isArray(data) ? data : (data && data.files);
-        if (!files || !files.length) throw new Error('empty');
-        buildIndex(files, data && data.generatedAt);
+        var list = Array.isArray(data) ? data : (data && data.orders);
+        if (!list || !list.length) throw new Error('清单为空');
+        state.orders = list;
+        state.ver = (data && data.generatedAt) ? String(data.generatedAt).slice(0, 10).replace(/-/g, '') : '';
+        state.loaded = true;
+        state.mode = 'manifest';
+        renderStat();
       })
-      .catch(function () {
-        // 没清单也能用：退化成"按文件名直接探测"模式
-        state.mode = 'probe';
-        state.index = [];
+      .catch(function (err) {
+        state.mode = 'error';
+        showTip('订单清单加载失败：' + (err && err.message ? err.message : '未知错误') +
+                '。若在手机上看到这条，请稍后重试。');
+        renderStat();
       });
   }
 
-  /* ---------- 查询 ---------- */
-  function search(q) {
-    var key = normalize(q);
+  function renderStat() {
+    var el = $('stat');
+    if (!el) return;
+    if (state.mode !== 'manifest') { el.textContent = ''; return; }
+    var nView = state.orders.reduce(function (n, o) { return n + (o.views ? o.views.length : 0); }, 0);
+    el.textContent = '共 ' + state.orders.length + ' 个订单，' + nView + ' 张爆炸图';
+  }
+
+  function showTip(msg) {
+    var box = $('tip');
+    if (!box) return;
+    box.innerHTML = msg ? '<div class="tip-bar">' + escapeHtml(msg) + '</div>' : '';
+  }
+
+  /* ---------------- 查询解析 ---------------- */
+  // 条码 -> 订单：SZD261007003_0051001 -> SZD261007003_005
+  function stripTail(s) {
+    return String(s).slice(0, -CONFIG.tailLen);
+  }
+
+  function findByKey(key) {
+    for (var i = 0; i < state.orders.length; i++) {
+      if (state.orders[i].key === key) return state.orders[i];
+    }
+    return null;
+  }
+
+  /**
+   * 一次输入可能有两种身份：
+   *   1. 订单号本身
+   *   2. 板件条码（尾部多 4 位板件序号）
+   * 返回 { order, barcode } —— barcode 非空时说明这是块具体的板件
+   */
+  function resolve(raw) {
+    var key = normalize(raw);
+    if (!key) return null;
+
+    var direct = findByKey(key);
+    if (direct) return { order: direct, barcode: '' };
+
+    // 只有输得比订单号更长时才可能是条码，避免误伤模糊搜索
+    if (raw.length > CONFIG.tailLen) {
+      var tailKey = normalize(stripTail(raw));
+      var hit = findByKey(tailKey);
+      if (hit) return { order: hit, barcode: String(raw).trim() };
+    }
+    return null;
+  }
+
+  function fuzzy(key) {
     if (!key) return [];
-    if (state.mode !== 'manifest') return [];
-    return state.index.filter(function (o) { return o.key.indexOf(key) !== -1; });
+    var out = [];
+    for (var i = 0; i < state.orders.length; i++) {
+      var o = state.orders[i];
+      if (o.key.indexOf(key) > -1 || key.indexOf(o.key) > -1) {
+        out.push(o);
+        if (out.length >= CONFIG.maxList) break;
+      }
+    }
+    return out;
   }
 
-  // 无清单时，猜文件名并逐个探测
-  function probe(q) {
-    var raw = String(q || '').trim();
-    if (!raw) return Promise.resolve(null);
-    var names = [];
-    if (/\.(html?|htm)$/i.test(raw)) names.push(raw);
-    CONFIG.exts.forEach(function (ext) { names.push(raw + ext); });
-    var tried = {}, chain = Promise.resolve(null);
-    names.forEach(function (name) {
-      if (tried[name]) return;
-      tried[name] = 1;
-      chain = chain.then(function (found) {
-        if (found) return found;
-        var url = CONFIG.orderDir + encodeURIComponent(name);
-        return fetch(url, { method: 'HEAD', cache: 'no-store' })
-          .then(function (res) { return res.ok ? { url: url, file: name } : null; })
-          .catch(function () { return null; });
+  /* ---------------- 渲染结果 ---------------- */
+  function clearResults() {
+    $('single').innerHTML = '';
+    $('grid').innerHTML = '';
+    $('partInfo').innerHTML = '';
+    $('empty').hidden = true;
+  }
+
+  function showEmpty(raw) {
+    var e = $('empty');
+    e.hidden = false;
+    var html = '<div class="big">没有找到匹配的订单</div>';
+    if (raw) html += '<div>没有与 <code>' + escapeHtml(raw) + '</code> 对应的订单</div>';
+    if (state.recent.length) {
+      html += '<div style="margin-top:14px;font-size:13px">最近查询：' +
+        state.recent.map(function (id) {
+          return '<code data-recent="' + escapeAttr(id) + '" style="cursor:pointer">' + escapeHtml(id) + '</code>';
+        }).join(' ') + '</div>';
+    }
+    e.innerHTML = html;
+    Array.prototype.forEach.call(e.querySelectorAll('[data-recent]'), function (el) {
+      el.addEventListener('click', function () {
+        $('q').value = el.getAttribute('data-recent');
+        submit();
       });
     });
-    return chain;
   }
 
-  function pushRecent(file) {
-    var list = state.recent.filter(function (f) { return f !== file; });
-    list.unshift(file);
-    state.recent = list.slice(0, CONFIG.maxRecent);
-    writeStore(CONFIG.recentKey, state.recent);
-    renderRecent();
-  }
+  function renderOrderCard(order, barcode) {
+    clearResults();
+    state.current = order;
+    pushRecent(order.id);
 
-  /* ---------- 渲染 ---------- */
-  function renderStats() {
-    var html = '';
-    if (state.mode === 'manifest') {
-      html += '<span class="chip">共 <b>' + state.index.length + '</b> 个订单</span>';
-    } else if (state.mode === 'probe') {
-      html += '<span class="chip warn">未找到清单文件，已切换为直连探测模式</span>';
-    } else {
-      html += '<span class="chip">加载中…</span>';
+    var nGroup = (order.groups || []).length;
+    var extra = [];
+    if (order.views && order.views.length) extra.push(order.views.length + ' 张图');
+    if (nGroup) extra.push(nGroup + ' 个视角');
+
+    var card = els('div', 'card');
+    var h = els('p', 'oid', order.id);
+    card.appendChild(h);
+
+    if (extra.length) card.appendChild(els('div', 'meta', extra.join(' · ')));
+
+    var acts = els('div', 'actions');
+    if (order.html) {
+      acts.appendChild(makeHtmlBtn(order));
     }
-    statsEl.innerHTML = html;
+    if (order.views && order.views.length) {
+      acts.appendChild(makeViewBtn(order));
+    }
+    if (!acts.children.length) {
+      card.appendChild(els('div', 'meta', '该订单没有可查看的内容'));
+    }
+    card.appendChild(acts);
+    $('single').appendChild(card);
+
+    if (barcode) loadPart(order, barcode);
   }
 
-  function renderRecent() {
-    if (!state.recent.length) { recentEl.hidden = true; return; }
-    var html = '<span>最近查询：</span>';
-    state.recent.forEach(function (f) {
-      html += '<a href="#" data-file="' + escapeAttr(f) + '">' + escapeHtml(displayName(f)) + '</a>';
+  // 微信内置浏览器会拦 window.open，这里用真链接 + 当前页跳转
+  function makeHtmlBtn(order) {
+    var a = document.createElement('a');
+    a.className = 'act k';
+    a.href = fileUrl(order.html);
+    a.setAttribute('data-html', order.html);
+    a.innerHTML = '查看 3D 模型<small>当前页打开</small>';
+    a.addEventListener('click', function (ev) {
+      if (ev.metaKey || ev.ctrlKey || ev.shiftKey) return; // 让浏览器自己处理新窗口
+      ev.preventDefault();
+      location.href = fileUrl(order.html);
     });
-    recentEl.innerHTML = html;
-    recentEl.hidden = false;
+    return a;
   }
 
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, function (c) {
-      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
-    });
-  }
-  function escapeAttr(s) { return escapeHtml(s); }
-
-  function renderEmpty(msg) {
-    gridEl.innerHTML = '';
-    rtitleEl.hidden = true;
-    emptyEl.innerHTML = msg;
-    emptyEl.hidden = false;
+  function makeViewBtn(order) {
+    var b = els('button', 'act');
+    b.type = 'button';
+    b.setAttribute('data-views', order.id);
+    b.innerHTML = '查看爆炸图<small>' + (order.views ? order.views.length : 0) + ' 张</small>';
+    b.addEventListener('click', function () { openViewer(order, ''); });
+    return b;
   }
 
-  function renderList(list, title) {
-    emptyEl.hidden = true;
-    if (!list.length) { renderEmpty('没有匹配到任何订单'); return; }
-    rtitleEl.textContent = title;
-    rtitleEl.hidden = false;
-    var html = '';
+  function renderList(list) {
+    clearResults();
+    var ul = $('grid');
     list.forEach(function (o) {
-      var url = escapeAttr(fileUrl(o.file));
-      html += '<div class="card">'
-        + '<a class="no" href="' + url + '" target="_blank" rel="noopener">' + escapeHtml(o.label) + '</a>'
-        + '<div class="ops">'
-        + '<a href="' + url + '" target="_blank" rel="noopener">打开订单</a>'
-        + '<button type="button" data-preview="' + escapeAttr(o.file) + '">本页查看</button>'
-        + '</div></div>';
+      var li = els('li');
+
+      var row1 = els('div', 'row1');
+      row1.appendChild(els('p', 'oid', o.id));
+      var nGroup = (o.groups || []).length;
+      row1.appendChild(els('span', 'mini',
+        (o.views ? o.views.length : 0) + ' 张图' + (nGroup ? ' · ' + nGroup + ' 视角' : '')));
+      li.appendChild(row1);
+
+      var acts = els('div', 'acts actions');
+      if (o.html) {
+        var smallHtml = makeHtmlBtn(o);
+        smallHtml.className = 'act sm k';
+        smallHtml.innerHTML = '3D 模型';
+        acts.appendChild(smallHtml);
+      }
+      if (o.views && o.views.length) {
+        var smallView = makeViewBtn(o);
+        smallView.className = 'act sm';
+        smallView.innerHTML = '爆炸图 ' + (o.views ? o.views.length : 0) + ' 张';
+        acts.appendChild(smallView);
+      }
+      li.appendChild(acts);
+      ul.appendChild(li);
     });
-    gridEl.innerHTML = html;
   }
 
-  function renderSuggest(list) {
-    if (!list.length) { sugEl.classList.remove('show'); sugEl.innerHTML = ''; return; }
-    var html = '';
-    list.slice(0, CONFIG.maxSuggest).forEach(function (o, i) {
-      html += '<div data-file="' + escapeAttr(o.file) + '" class="' + (i === 0 ? 'active' : '') + '">'
-        + '<span>' + escapeHtml(o.label) + '</span><small>回车打开</small></div>';
-    });
-    sugEl.innerHTML = html;
-    sugEl.classList.add('show');
-  }
-
-  function hideSuggest() { sugEl.classList.remove('show'); }
-
-  /* ---------- 打开 / 预览 ---------- */
-  // 用当前页跳转，不用 window.open —— 微信内置浏览器会拦截弹窗，
-  // 只有 <a> 链接和 location.href 是百分之百走得通的。
-  function openOrder(file) {
-    pushRecent(file);
-    location.href = fileUrl(file);
-  }
-  function previewOrder(file) {
-    pushRecent(file);
-    previewName.textContent = displayName(file);
-    previewFrame.src = fileUrl(file);
-    previewBox.classList.add('show');
-    if (typeof previewBox.scrollIntoView === 'function') {
-      previewBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  /* ---------------- 板件详情（按需读 CSV） ---------------- */
+  function splitCsvLine(s) {
+    var out = [], cur = '', q = false;
+    for (var i = 0; i < s.length; i++) {
+      var c = s.charAt(i);
+      if (c === '"') {
+        if (q && s.charAt(i + 1) === '"') { cur += '"'; i++; } else { q = !q; }
+      } else if (c === ',' && !q) { out.push(cur); cur = ''; } else { cur += c; }
     }
+    out.push(cur);
+    return out;
   }
 
-  /* ---------- 提交 ---------- */
-  function submit() {
-    hideSuggest();
-    var q = qEl.value.trim();
-    if (!q) { renderList(state.index.slice(0, 60), '全部订单（最多显示 60 条）'); return; }
+  function parseCsv(text) {
+    text = String(text).replace(/^\uFEFF/, '');
+    var lines = text.split(/\r?\n/).filter(function (l) { return l.trim() !== ''; });
+    if (!lines.length) return { head: [], rows: [] };
+    var head = splitCsvLine(lines[0]);
+    var idx = {};
+    head.forEach(function (h, i) { idx[String(h).trim()] = i; });
+    var rows = lines.slice(1).map(splitCsvLine);
+    return { head: head, idx: idx, rows: rows };
+  }
 
-    if (state.mode === 'manifest') {
-      var hits = search(q);
-      var exact = hits.filter(function (o) { return o.key === normalize(q); });
-      if (exact.length === 1) {
-        openOrder(exact[0].file);
-        renderList([exact[0]], '已打开（精确匹配）');
+  function getcsv(order) {
+    if (!order || !order.csv) return Promise.resolve(null);
+    if (state.csvCache[order.id]) return Promise.resolve(state.csvCache[order.id]);
+    var url = CONFIG.orderDir + pathUrl(order.csv);
+    return fetch(url).then(function (r) {
+      if (!r.ok) throw new Error('csv ' + r.status);
+      return r.text();
+    }).then(function (t) {
+      var p = parseCsv(t);
+      state.csvCache[order.id] = p;
+      return p;
+    }).catch(function () { return null; });
+  }
+
+  function lookupPart(csv, barcode) {
+    if (!csv || !csv.rows || !barcode) return null;
+    var iBar = csv.idx['完整条码'];
+    if (iBar == null) return null;
+    var target = String(barcode).trim().toUpperCase();
+    for (var i = 0; i < csv.rows.length; i++) {
+      var r = csv.rows[i];
+      if (String(r[iBar] || '').trim().toUpperCase() === target) {
+        function g(k) {
+          var ii = csv.idx[k];
+          return ii == null ? '' : String(r[ii] == null ? '' : r[ii]).trim();
+        }
+        var size = [g('成品长'), g('成品宽'), g('成品厚')]
+          .filter(function (x) { return x !== ''; })
+          .map(function (x) { return String(parseFloat(x)); })
+          .join('×');
+        return { name: g('板件名称'), cabinet: g('柜体'), size: size, color: g('花色'), code: target };
+      }
+    }
+    return null;
+  }
+
+  function loadPart(order, barcode) {
+    getcsv(order).then(function (csv) {
+      if (!csv) {
+        renderPart({ code: String(barcode).toUpperCase(), name: '', cabinet: '', size: '', color: '' });
         return;
       }
-      renderList(hits, '匹配到 ' + hits.length + ' 个订单：' + escapeHtml(q));
+      var p = lookupPart(csv, barcode);
+      renderPart(p || { code: String(barcode).toUpperCase(), name: '', cabinet: '', size: '', color: '' });
+    });
+  }
+
+  function renderPart(p) {
+    var box = $('partInfo');
+    if (!box) return;
+    if (!p) { box.innerHTML = ''; return; }
+
+    var html = '<div class="partbar">';
+    html += '<div class="pn">' + escapeHtml(p.name || '未知板件') + '</div>';
+    html += '<div class="kv">';
+    html += '<span>条码 <b>' + escapeHtml(p.code) + '</b></span>';
+    if (p.cabinet !== '') html += '<span>柜体 <b>' + escapeHtml(p.cabinet) + '</b></span>';
+    if (p.size) html += '<span>规格 <b>' + escapeHtml(p.size) + '</b></span>';
+    if (p.color) html += '<span>花色 <b>' + escapeHtml(p.color) + '</b></span>';
+    html += '</div></div>';
+    box.innerHTML = html;
+
+    // 扫到板件时，自动跳到它所在的柜体分组，省去再翻一次
+    if (p.cabinet !== '' && state.current && state.current.views && state.current.views.length) {
+      var want = '柜' + p.cabinet;
+      if ((state.current.groups || []).indexOf(want) > -1) {
+        state.pendingGroup = want;
+      }
+    }
+  }
+
+  /* ---------------- 爆炸图浏览面板 ---------------- */
+  function viewsOfGroup(order, g) {
+    return (order.views || []).filter(function (v) { return v.g === g; });
+  }
+
+  function openViewer(order, focusGroup) {
+    state.viewOrder = order;
+    var gs = order.groups || [];
+    var g = focusGroup || (state.pendingGroup && gs.indexOf(state.pendingGroup) > -1 ? state.pendingGroup : gs[0]) || '';
+    state.pendingGroup = '';
+    state.viewGroup = g;
+    renderViewer();
+    $('viewer').classList.add('show');
+  }
+
+  function closeViewer() {
+    $('viewer').classList.remove('show');
+  }
+
+  function renderViewer() {
+    var order = state.viewOrder;
+    if (!order) return;
+    $('viewerTitle').textContent = order.id;
+
+    var tabs = $('viewerTabs');
+    tabs.innerHTML = '';
+    (order.groups || []).forEach(function (g) {
+      var b = els('button', g === state.viewGroup ? 'tab on' : 'tab', g);
+      b.type = 'button';
+      b.addEventListener('click', function () {
+        state.viewGroup = g;
+        renderViewer();
+      });
+      tabs.appendChild(b);
+    });
+
+    var list = viewsOfGroup(order, state.viewGroup);
+    var grid = $('viewerGrid');
+    grid.innerHTML = '';
+    list.forEach(function (v, i) {
+      var fig = els('figure');
+
+      var ph = els('div', 'ph');
+      var img = document.createElement('img');
+      img.loading = 'lazy';
+      img.alt = v.g + ' ' + v.t;
+      img.src = fileUrl(v.f);
+      ph.appendChild(img);
+
+      var cap = els('figcaption', null, v.g === '全景' ? v.t : v.g + ' ' + v.t);
+
+      fig.appendChild(ph);
+      fig.appendChild(cap);
+      // 整个图形可点，点开大图
+      (function (idx) {
+        fig.addEventListener('click', function () { openLb(list, idx); });
+      })(i);
+      grid.appendChild(fig);
+    });
+  }
+
+  /* ---------------- 大图查看 ---------------- */
+  function openLb(list, i) {
+    if (!list || !list.length) return;
+    state.lb = { list: list, i: i };
+    renderLb();
+    $('lb').classList.add('show');
+  }
+  function closeLb() { $('lb').classList.remove('show'); }
+
+  function renderLb() {
+    var cur = state.lb.list[state.lb.i];
+    if (!cur) { closeLb(); return; }
+    $('lbImg').src = fileUrl(cur.f);
+    $('lbImg').alt = cur.g + ' ' + cur.t;
+    $('lbCap').textContent = (cur.g === '全景' ? '' : cur.g + ' · ') + cur.t;
+    $('lbIdx').textContent = (state.lb.i + 1) + ' / ' + state.lb.list.length;
+    $('lbPrev').disabled = state.lb.i <= 0;
+    $('lbNext').disabled = state.lb.i >= state.lb.list.length - 1;
+    $('lbPrev').style.opacity = state.lb.i <= 0 ? .35 : 1;
+    $('lbNext').style.opacity = state.lb.i >= state.lb.list.length - 1 ? .35 : 1;
+  }
+  function stepLb(d) {
+    var n = state.lb.i + d;
+    if (n < 0 || n >= state.lb.list.length) return;
+    state.lb.i = n;
+    renderLb();
+  }
+
+  /* ---------------- 提交主流程 ---------------- */
+  function submit() {
+    if (!state.loaded) return;
+    var raw = String($('q').value || '').trim();
+    $('clrBtn').hidden = !raw;
+    if (!raw) { clearResults(); showEmpty(''); return; }
+
+    clearResults();
+    state.current = null;
+    state.pendingGroup = '';
+
+    var hit = resolve(raw);
+    if (hit) { renderOrderCard(hit.order, hit.barcode); return; }
+
+    var list = fuzzy(normalize(raw));
+    if (list.length === 1) { renderOrderCard(list[0], ''); return; }
+    if (list.length > 1) { renderList(list); return; }
+    showEmpty(raw);
+  }
+
+  /* ---------------- 扫码枪：保持聚焦，回车即查 ---------------- */
+  function keepFocus() {
+    // 页面任意空白处点击后都回到输入框，保证扫码枪随时可用
+    document.addEventListener('click', function (ev) {
+      if (ev.target.closest && ev.target.closest('button,a,input,label,.pics,.tabs')) return;
+      if ($('viewer').classList.contains('show') || $('lb').classList.contains('show')) return;
+      if ($('scanPanel').classList.contains('show')) return;
+      try { $('q').focus(); } catch (e) {}
+    });
+  }
+
+  /* ---------------- 摄像头扫码 ---------------- */
+  var scan = { stream: null, timer: 0, detector: null, reader: null, busy: false, zxingTried: false };
+
+  function scanMsg(t, isErr) {
+    var el = $('scanMsg');
+    if (!el) return;
+    el.textContent = t;
+    el.className = isErr ? 'msg err' : 'msg';
+  }
+
+  function stopScan() {
+    if (scan.timer) { clearInterval(scan.timer); scan.timer = 0; }
+    if (scan.reader) {
+      try { scan.reader.reset(); } catch (e) {}
+      scan.reader = null;
+    }
+    if (scan.stream) {
+      scan.stream.getTracks().forEach(function (t) { try { t.stop(); } catch (e) {} });
+      scan.stream = null;
+    }
+    var v = $('scanVideo');
+    try { v.pause(); } catch (e) {}
+    try { v.srcObject = null; } catch (e) {}
+  }
+
+  function closeScan() {
+    stopScan();
+    $('scanPanel').classList.remove('show');
+    scan.busy = false;
+    try { $('q').focus(); } catch (e) {}
+  }
+
+  function onDetect(text) {
+    if (scan.busy || !text) return;
+    scan.busy = true;
+    try { if (navigator.vibrate) navigator.vibrate(40); } catch (e) {}
+    closeScan();
+    $('q').value = String(text).trim();
+    submit();
+    setTimeout(function () { scan.busy = false; }, 600);
+  }
+
+  function loadZxing() {
+    return new Promise(function (resolve, reject) {
+      if (window.ZXing) return resolve(window.ZXing);
+      var s = document.createElement('script');
+      var done = false;
+      s.src = 'https://unpkg.com/@zxing/library@0.21.2/umd/index.min.js';
+      s.onload = function () { done = true; resolve(window.ZXing); };
+      s.onerror = function () { done = true; reject(new Error('库加载失败')); };
+      document.head.appendChild(s);
+      setTimeout(function () { if (!done) reject(new Error('库加载超时')); }, 15000);
+    });
+  }
+
+  function startNative(video) {
+    if (!('BarcodeDetector' in window)) return Promise.reject(new Error('no-native'));
+    var formats = ['code_128', 'code_39', 'code_93', 'codabar', 'ean_13', 'ean_8', 'upc_a', 'upc_e', 'itf', 'qr_code'];
+    var d;
+    try { d = new window.BarcodeDetector({ formats: formats }); }
+    catch (e) { try { d = new window.BarcodeDetector(); } catch (e2) { d = null; } }
+    if (!d) return Promise.reject(new Error('no-native'));
+
+    scan.detector = d;
+    scan.timer = setInterval(function () {
+      if (scan.busy || !video.videoWidth) return;
+      d.detect(video).then(function (codes) {
+        if (codes && codes.length && codes[0].rawValue) onDetect(codes[0].rawValue);
+      }).catch(function () {});
+    }, CONFIG.scanMs);
+    scanMsg('对准板件上的条码，识别后自动跳转');
+    return Promise.resolve();
+  }
+
+  function startZxing(video) {
+    return loadZxing().then(function (ZXing) {
+      var r = new ZXing.BrowserMultiFormatReader();
+      try { r.timeBetweenDecodingAttempts = CONFIG.scanMs; } catch (e) {}
+      scan.reader = r;
+      return r.decodeFromVideoDevice(null, video, function (result) {
+        if (result && result.getText) onDetect(result.getText());
+      });
+    });
+  }
+
+  function openScan() {
+    if (!window.isSecureContext) {
+      showTip('摄像头需要在 HTTPS 下使用，请手动输入或用 USB 扫码枪。');
+      return;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showTip('当前浏览器不支持调用摄像头，请用 USB 扫码枪或手动输入。');
       return;
     }
 
-    // 探测模式
-    gridEl.innerHTML = '';
-    rtitleEl.hidden = true;
-    emptyEl.innerHTML = '正在查找…';
-    emptyEl.hidden = false;
-    probe(q).then(function (found) {
-      if (!found) { renderEmpty('没有找到订单 <code>' + escapeHtml(q) + '</code>'); return; }
-      openOrder(found.file);
-      renderList([{ file: found.file, key: normalize(found.file), label: displayName(found.file) }], '已打开');
+    $('scanPanel').classList.add('show');
+    scanMsg('正在启动摄像头…');
+
+    navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 } }, audio: false
+    }).then(function (stream) {
+      scan.stream = stream;
+      var v = $('scanVideo');
+      v.srcObject = stream;
+      if (v.setAttribute) { v.setAttribute('playsinline', ''); v.muted = true; }
+      var p = v.play();
+      return (p && p.catch ? p.catch(function () {}) : Promise.resolve()).then(function () { return v; });
+    }).then(function (v) {
+      return startNative(v).catch(function () {
+        scanMsg('正在加载识别引擎…');
+        return startZxing(v);
+      });
+    }).catch(function (err) {
+      var name = err && err.name;
+      if (name === 'NotAllowedError' || name === 'SecurityError') {
+        scanMsg('摄像头权限被拒绝。请在浏览器设置里允许相机权限，或改用 USB 扫码枪。', true);
+      } else if (name === 'NotFoundError') {
+        scanMsg('没有检测到摄像头，请改用 USB 扫码枪或手动输入。', true);
+      } else {
+        scanMsg('摄像头启动失败：' + (err && err.message ? err.message : '未知错误') +
+                '。可改用 USB 扫码枪或手动输入。', true);
+      }
     });
   }
 
-  /* ---------- 事件 ---------- */
-  $('form').addEventListener('submit', function (e) {
-    e.preventDefault();
-    submit();
-  });
+  /* ---------------- 事件绑定 ---------------- */
+  function bind() {
+    $('form').addEventListener('submit', function (e) { e.preventDefault(); submit(); });
 
-  qEl.addEventListener('input', function () {
-    if (state.mode !== 'manifest') { hideSuggest(); return; }
-    var q = qEl.value.trim();
-    if (!q) { hideSuggest(); return; }
-    renderSuggest(search(q));
-  });
+    $('q').addEventListener('input', function () {
+      $('clrBtn').hidden = !$('q').value;
+    });
 
-  qEl.addEventListener('keydown', function (e) {
-    var items = sugEl.querySelectorAll('div');
-    if (!items.length || !sugEl.classList.contains('show')) return;
-    var active = sugEl.querySelector('div.active');
-    var idx = Array.prototype.indexOf.call(items, active);
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      var next = e.key === 'ArrowDown' ? idx + 1 : idx - 1;
-      if (next < 0) next = items.length - 1;
-      if (next >= items.length) next = 0;
-      if (active) active.classList.remove('active');
-      items[next].classList.add('active');
-    } else if (e.key === 'Enter' && active && e.target === qEl) {
-      // 有候选且已按下方向键选中时，优先打开选中的那一项
-      if (idx > 0) { e.preventDefault(); hideSuggest(); openOrder(active.getAttribute('data-file')); }
-    }
-  });
+    $('clrBtn').addEventListener('click', function () {
+      $('q').value = '';
+      $('clrBtn').hidden = true;
+      clearResults();
+      try { $('q').focus(); } catch (e) {}
+    });
 
-  sugEl.addEventListener('mousedown', function (e) {
-    var el = e.target.closest ? e.target.closest('[data-file]') : null;
-    if (!el) return;
-    e.preventDefault();
-    hideSuggest();
-    openOrder(el.getAttribute('data-file'));
-  });
+    $('scanBtn').addEventListener('click', openScan);
+    $('scanClose').addEventListener('click', closeScan);
 
-  gridEl.addEventListener('click', function (e) {
-    var t = e.target;
-    if (!t || !t.getAttribute) return;
-    if (t.getAttribute('data-open')) openOrder(t.getAttribute('data-open'));
-    else if (t.getAttribute('data-preview')) previewOrder(t.getAttribute('data-preview'));
-  });
+    $('viewerClose').addEventListener('click', closeViewer);
+    $('lbClose').addEventListener('click', closeLb);
+    $('lbPrev').addEventListener('click', function () { stepLb(-1); });
+    $('lbNext').addEventListener('click', function () { stepLb(1); });
 
-  recentEl.addEventListener('click', function (e) {
-    var t = e.target;
-    if (!t || t.tagName !== 'A') return;
-    e.preventDefault();
-    previewOrder(t.getAttribute('data-file'));
-  });
+    document.addEventListener('keydown', function (e) {
+      if ($('lb').classList.contains('show')) {
+        if (e.key === 'Escape') closeLb();
+        else if (e.key === 'ArrowLeft') stepLb(-1);
+        else if (e.key === 'ArrowRight') stepLb(1);
+      } else if ($('viewer').classList.contains('show')) {
+        if (e.key === 'Escape') closeViewer();
+      } else if ($('scanPanel').classList.contains('show')) {
+        if (e.key === 'Escape') closeScan();
+      }
+    });
 
-  $('previewClose').addEventListener('click', function () {
-    previewFrame.src = '';
-    previewBox.classList.remove('show');
-  });
+    // 大图左右滑动
+    (function () {
+      var el = $('lb'), x0 = null, y0 = null;
+      var stage = el.querySelector('.stage');
+      function start(e) { var t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; }
+      function end(e) {
+        if (x0 === null) return;
+        var t = e.changedTouches[0];
+        var dx = t.clientX - x0, dy = t.clientY - y0;
+        if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) stepLb(dx < 0 ? 1 : -1);
+        x0 = null;
+      }
+      if (stage) {
+        stage.addEventListener('touchstart', start, { passive: true });
+        stage.addEventListener('touchend', end, { passive: true });
+      }
+    })();
 
-  $('themeBtn').addEventListener('click', function () {
-    applyTheme(document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
-  });
+    // 系统返回键：先关覆盖层
+    window.addEventListener('popstate', function () {
+      if ($('lb').classList.contains('show')) { closeLb(); return; }
+      if ($('viewer').classList.contains('show')) { closeViewer(); return; }
+      if ($('scanPanel').classList.contains('show')) { closeScan(); }
+    });
+  }
 
-  document.addEventListener('click', function (e) {
-    if (!document.getElementById('form').contains(e.target)) hideSuggest();
-  });
+  /* ---------------- 启动 ---------------- */
+  function boot() {
+    initTheme();
+    state.recent = readRecent();
+    bind();
+    keepFocus();
 
-  /* ---------- 启动 ---------- */
-  state.recent = readStore(CONFIG.recentKey, []);
-  renderRecent();
+    loadManifest().then(function () {
+      // ?q=直达：微信里发的链接可以直接落到某个订单
+      var m = /[?&]q=([^&]+)/.exec(location.search);
+      if (m) {
+        var v = decodeURIComponent(m[1].replace(/\+/g, ' '));
+        $('q').value = v;
+        $('clrBtn').hidden = false;
+        submit();
+      }
+    });
 
-  loadManifest().then(function () {
-    renderStats();
-    // 支持 ?q=订单号 直达
-    var params = new URLSearchParams(location.search);
-    var init = (params.get('q') || params.get('order') || '').trim();
-    if (init) {
-      qEl.value = init;
-      submit();
-    } else if (state.mode === 'manifest') {
-      renderList(state.index.slice(0, 60), '全部订单（最多显示 60 条）');
-    } else {
-      renderEmpty('直接输入订单号查询即可');
-    }
-  }).catch(function () {
-    state.mode = 'probe';
-    renderStats();
-  });
+    try { $('q').focus(); } catch (e) {}
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
 })();
 </script>
 </body>

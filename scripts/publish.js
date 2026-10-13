@@ -122,6 +122,8 @@ async function mapLimit(arr, limit, fn) {
 }
 
 async function main() {
+  const prune = process.argv.slice(2).indexOf('--prune') > -1;
+
   console.log('正在读取远端 ' + OWNER + '/' + REPO + '@' + BRANCH + ' …');
   const ref = await api('/repos/' + OWNER + '/' + REPO + '/git/ref/heads/' + BRANCH);
   const baseCommitSha = ref.object.sha;
@@ -142,18 +144,28 @@ async function main() {
   }
 
   const changed = local.filter(function (f) { return remote[f.rel] !== f.sha; });
+
+  // 远端有、本地没有的文件。默认不删，避免误删；加 --prune 才真正删除。
+  // index.json 是自动生成的清单，任何时候都保留，删除会导致站点短暂 404。
+  const KEEP_IF_ABSENT = [/^orders\/index\.json$/];
   const removed = Object.keys(remote).filter(function (p) {
+    if (KEEP_IF_ABSENT.some(function (re) { return re.test(p); })) return false;
     return local.every(function (f) { return f.rel !== p; });
   });
 
   console.log('本地文件 ' + local.length + ' 个，远端 ' + Object.keys(remote).length + ' 个');
   console.log('本次需要上传 ' + changed.length + ' 个文件，共 ' +
     (changed.reduce(function (n, f) { return n + f.size; }, 0) / 1024 / 1024).toFixed(2) + 'MB');
+
   if (removed.length) {
-    console.log('远端已不存在于本地的文件 ' + removed.length + ' 个（本次不删除，避免误删）');
+    console.log('\n远端存在但本地没有的文件 ' + removed.length + ' 个：');
+    removed.slice(0, 12).forEach(function (p) { console.log('  - ' + p); });
+    if (removed.length > 12) console.log('  … 其余 ' + (removed.length - 12) + ' 个省略');
+    console.log(prune ? '本次将一并删除（--prune）' : '本次不删除。要清理请加参数 --prune');
   }
 
-  if (!changed.length) {
+  const willDelete = prune ? removed.length : 0;
+  if (!changed.length && !willDelete) {
     console.log('\n没有变化，无需发布。');
     return;
   }
@@ -171,12 +183,22 @@ async function main() {
   });
   console.log('\n数据对象创建完成');
 
+  const treeAll = entries.slice();
+  if (prune && removed.length) {
+    // tree 条目里 sha 为 null 即表示删除该路径
+    removed.forEach(function (p) {
+      treeAll.push({ path: p, mode: '100644', type: 'blob', sha: null });
+    });
+  }
+
   const tree = await api('/repos/' + OWNER + '/' + REPO + '/git/trees', {
     method: 'POST',
-    body: { base_tree: baseCommitSha, tree: entries },
+    body: { base_tree: baseCommitSha, tree: treeAll },
   });
 
-  const msg = process.env.COMMIT_MSG || ('更新订单数据 · ' + new Date().toISOString().slice(0, 10));
+  const suffix = prune && removed.length ? ' · 清理 ' + removed.length + ' 个文件' : '';
+  const msg = process.env.COMMIT_MSG ||
+    ('发布订单数据 · ' + new Date().toISOString().slice(0, 10) + suffix);
   const commit = await api('/repos/' + OWNER + '/' + REPO + '/git/commits', {
     method: 'POST',
     body: { message: msg, tree: tree.sha, parents: [baseCommitSha] },

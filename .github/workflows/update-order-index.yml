@@ -2,12 +2,10 @@ name: 更新订单清单
 
 on:
   push:
+    branches: [main]
     paths:
       - 'orders/**'
       - 'scripts/gen-index.js'
-      - '.github/workflows/update-order-index.yml'
-    paths-ignore:
-      - 'orders/index.json'
   workflow_dispatch:
 
 permissions:
@@ -15,6 +13,8 @@ permissions:
 
 jobs:
   build:
+    # 关键：由本工作流自己推送的提交不再触发，避免无限循环提交
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: 拉取代码
@@ -36,6 +36,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "清单无变化，跳过提交。"
           else
-            git commit -m "chore: 更新订单清单"
+            git commit -m "chore: 更新订单清单 [skip ci]"
             git push
           fi

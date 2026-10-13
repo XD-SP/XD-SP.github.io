@@ -34,22 +34,35 @@ python -m http.server 8000
 npx serve .
 ```
 
-## 部署到 GitHub Pages
+## 线上地址
 
-1. 在 GitHub 新建一个仓库，把整个目录推上去（`orders/`、`.github/`、`scripts/` 都要推）
-2. 打开仓库 **Settings → Pages**
-3. **Source** 选 *Deploy from a branch*，**Branch** 选 `main`、目录选 `/ (root)`，点 **Save**
-4. 等 1–2 分钟，访问 `https://你的用户名.github.io/仓库名/`
+```
+https://xd-sp.github.io/
+```
 
-之后每次往 `orders/` 里加订单 HTML 并推送，GitHub Actions 会自动更新 `orders/index.json`，页面无需再动。
+仓库是 `XD-SP/XD-SP.github.io`（即 GitHub 用户主页仓库），Pages 已开启，
+从 `main` 分支根目录发布，推送后 1–2 分钟生效。不用再做任何配置。
 
 ## 上传订单文件
 
-三种方式任选：
+最常用的方式，不用装 Git、不用懂命令行：
 
-- **网页直接传**：进仓库 → `orders/` → **Add file → Upload files**，拖进去后点 Commit
-- **本地生成后推送**：`git add orders/ && git commit -m "新增订单" && git push`
-- **批量导入**：本地放好文件后，先跑 `node scripts/gen-index.js` 再推送
+1. 打开 `https://github.com/XD-SP/XD-SP.github.io`，进 `orders/` 目录
+2. 点右上角 **Add file → Upload files**
+3. 把订单 HTML 拖进去，拉到底点 **Commit changes**
+4. 等约 1 分钟，GitHub Actions 会自动重建清单，微信里刷新就能查到
+
+也可以用命令行：
+
+```bash
+git add orders/
+git commit -m "新增订单"
+git push
+```
+
+清单由 `.github/workflows/update-order-index.yml` 自动生成。
+这里有两个防坑设计：工作流自己推送的提交**不会再次触发**（`if: github.actor != 'github-actions[bot]'`），
+否则会因为清单里的时间戳每次都变而陷入无限循环提交。
 
 ## 命名规范
 
@@ -67,7 +80,7 @@ npx serve .
 | 自动补全 | 输入时出现候选下拉，↑↓ 选择、回车打开 |
 | 本页查看 | 不新开标签页，直接嵌在下方面板里看 |
 | 最近查询 | 自动记住最近 8 条，本地保存 |
-| 直达链接 | `https://xxx.github.io/仓库名/?q=DD20261012001` |
+| 直达链接 | `https://xd-sp.github.io/?q=DD20261012001` |
 | 深浅色切换 | 右上角按钮，记住选择 |
 
 ## 微信里怎么打开
@@ -75,13 +88,13 @@ npx serve .
 页面已按微信内置浏览器的限制做过适配，把这个网址直接发出去即可：
 
 ```
-https://<用户名>.github.io/order-query/
+https://xd-sp.github.io/
 ```
 
 也可以在微信里发直达某个订单的链接：
 
 ```
-https://<用户名>.github.io/order-query/?q=DD20261012001
+https://xd-sp.github.io/?q=DD20261012001
 ```
 
 已处理的微信兼容问题：
@@ -116,6 +129,7 @@ var CONFIG = {
 
 ## 注意
 
-- **免费版 GitHub Pages 只有公开仓库能用**。订单数据如果涉及客户信息（姓名、电话、地址），公开等于对外泄露。这种情况别用免费 Pages，改用私有方案：内网静态服务器、企业版 GitHub、或加一层登录鉴权。
+- **用完示例订单记得删**：`orders/DD20261012001.html`、`DD20261012002.html`、`DD20261012003.html` 是演示文件，正式上线前删掉。
+- **免费版 GitHub Pages 只有公开仓库能用**，订单数据如果涉及客户信息（姓名、电话、地址），公开等于对外泄露。这种情况别用免费 Pages，改用私有方案：内网静态服务器、企业版 GitHub、或加一层登录鉴权。
 - 没有清单文件时页面不会崩，会自动切成"直连探测"模式（按文件名逐个试），但体验和准确率都差一些，建议跑一次生成脚本。
 - 页面每次最多展示 60 条结果。

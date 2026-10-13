@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>订单查询</title>
+<meta name="description" content="输入订单号，打开对应的订单页面">
+<meta name="format-detection" content="telephone=no,email=no,address=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0d1117">
+<meta property="og:title" content="订单查询">
+<meta property="og:description" content="输入订单号查看订单详情">
+<meta property="og:type" content="website">
+<style>
+:root{
+  --bg:#0d1117; --bg-soft:#161b22; --card:#171c24; --line:#2a313c;
+  --text:#e6edf3; --text-dim:#9aa7b4; --accent:#3b82f6; --accent-soft:#1d3b6e;
+  --ok:#2ea043; --warn:#d29922; --shadow:0 8px 28px rgba(0,0,0,.45);
+}
+html[data-theme="light"]{
+  --bg:#f6f8fa; --bg-soft:#ffffff; --card:#ffffff; --line:#d8dee4;
+  --text:#1f2328; --text-dim:#656d76; --accent:#0969da; --accent-soft:#ddf0ff;
+  --ok:#1a7f37; --warn:#9a6700; --shadow:0 8px 24px rgba(31,35,40,.10);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:920px;margin:0 auto;padding:28px 20px 60px}
+
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:26px}
+.brand{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:600}
+.brand .dot{width:10px;height:10px;border-radius:50%;background:var(--accent)}
+.tbtn{
+  background:var(--bg-soft);color:var(--text-dim);border:1px solid var(--line);
+  border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px;
+}
+.tbtn:hover{color:var(--text);border-color:var(--accent)}
+
+h1.title{font-size:26px;margin:34px 0 6px;font-weight:650;letter-spacing:.5px}
+p.sub{margin:0 0 22px;color:var(--text-dim);font-size:14px}
+
+.stats{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;font-size:13px}
+.chip{
+  background:var(--bg-soft);border:1px solid var(--line);color:var(--text-dim);
+  border-radius:999px;padding:4px 12px;
+}
+.chip b{color:var(--text);font-weight:600}
+.chip.warn{border-color:var(--warn);color:var(--warn)}
+
+.searchbox{position:relative;display:flex;gap:10px}
+.searchbox input{
+  flex:1;min-width:0;padding:14px 16px;font-size:16px;
+  background:var(--bg-soft);color:var(--text);
+  border:1px solid var(--line);border-radius:12px;outline:none;
+  transition:border-color .15s,box-shadow .15s;
+}
+.searchbox input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.18)}
+.searchbox input::placeholder{color:var(--text-dim)}
+.searchbox button{
+  padding:0 22px;font-size:15px;font-weight:600;cursor:pointer;
+  background:var(--accent);color:#fff;border:0;border-radius:12px;
+}
+.searchbox button:hover{filter:brightness(1.08)}
+.searchbox button:disabled{opacity:.6;cursor:not-allowed}
+
+.sug{
+  position:absolute;left:0;right:0;top:calc(100% + 8px);z-index:20;
+  background:var(--bg-soft);border:1px solid var(--line);border-radius:12px;
+  box-shadow:var(--shadow);max-height:320px;overflow:auto;display:none;
+}
+.sug.show{display:block}
+.sug div{
+  padding:11px 16px;cursor:pointer;display:flex;justify-content:space-between;
+  gap:12px;align-items:center;border-bottom:1px solid var(--line);font-size:14px;
+}
+.sug div:last-child{border-bottom:0}
+.sug div.active,.sug div:hover{background:var(--accent-soft)}
+.sug div small{color:var(--text-dim);font-size:12px;flex:none}
+
+section.results{margin-top:30px}
+.rtitle{font-size:13px;color:var(--text-dim);margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:14px 16px;display:flex;flex-direction:column;gap:10px;
+}
+.card .no{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:15px;font-weight:600;color:var(--text);word-break:break-all;
+  text-decoration:none;display:block;
+}
+.card .ops{display:flex;gap:18px;font-size:13px;align-items:center}
+.card .ops a,.card .ops button{
+  background:none;border:0;padding:6px 0;cursor:pointer;font-size:13px;
+  color:var(--accent);text-decoration:none;font-family:inherit;
+}
+.card .ops a:hover,.card .ops button:hover{text-decoration:underline}
+
+.empty{
+  border:1px dashed var(--line);border-radius:12px;padding:34px 20px;
+  text-align:center;color:var(--text-dim);font-size:14px;
+}
+.empty code{color:var(--text);font-family:ui-monospace,Menlo,Consolas,monospace}
+
+#previewBox{margin-top:28px;display:none}
+#previewBox.show{display:block}
+#previewBox .bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+#previewBox iframe{
+  width:100%;height:min(72vh,720px);background:#fff;
+  border:1px solid var(--line);border-radius:12px;display:block;
+}
+.recent{margin-top:26px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.recent span{font-size:13px;color:var(--text-dim);margin-right:2px}
+.recent a{
+  font-size:13px;background:var(--bg-soft);border:1px solid var(--line);
+  color:var(--text-dim);border-radius:999px;padding:4px 12px;cursor:pointer;
+}
+.recent a:hover{border-color:var(--accent);color:var(--text)}
+footer{margin-top:44px;color:var(--text-dim);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
+@media(max-width:560px){
+  h1.title{font-size:22px;margin-top:24px}
+  .searchbox{flex-direction:column}
+  .searchbox button{padding:13px 0}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand"><i class="dot"></i><span>订单查询</span></div>
+    <button class="tbtn" id="themeBtn" type="button">切换主题</button>
+  </header>
+
+  <h1 class="title">输入订单号，打开订单页面</h1>
+  <p class="sub">订单号就是文件名，支持前后模糊匹配，回车即可查询。</p>
+
+  <div class="stats" id="stats"></div>
+
+  <form class="searchbox" id="form" autocomplete="off">
+    <input id="q" type="search" placeholder="例如：DD20261012001 或 1001" aria-label="订单号">
+    <button type="submit" id="btn">查询</button>
+    <div class="sug" id="sug"></div>
+  </form>
+
+  <section class="results">
+    <div class="rtitle" id="rtitle" hidden></div>
+    <div class="grid" id="grid"></div>
+    <div class="empty" id="empty" hidden></div>
+  </section>
+
+  <div id="previewBox">
+    <div class="bar">
+      <b id="previewName" style="font-size:14px"></b>
+      <button class="tbtn" id="previewClose" type="button">关闭预览</button>
+    </div>
+    <iframe id="preview" title="订单预览" referrerpolicy="no-referrer"></iframe>
+  </div>
+
+  <div class="recent" id="recentBox" hidden></div>
+
+  <footer>
+    订单文件放在仓库的 <code>orders/</code> 目录下，文件名即订单号。<br>
+    新增文件后会自动生成清单，无需改动本页。
+  </footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ============ 配置：改这里就够了 ============ */
+  var CONFIG = {
+    orderDir:   'orders/',            // 订单 HTML 存放目录（相对本页）
+    manifest:   'orders/index.json',  // 自动生成的清单文件
+    exts:       ['.html', '.htm'],    // 可能的后缀
+    recentKey:  'order_query_recent',
+    themeKey:   'order_query_theme',
+    maxRecent:  8,
+    maxSuggest: 12
+  };
+  /* ========================================== */
+
+  var $ = function (id) { return document.getElementById(id); };
+  var qEl = $('q'), sugEl = $('sug'), gridEl = $('grid'), emptyEl = $('empty'),
+      rtitleEl = $('rtitle'), statsEl = $('stats'), recentEl = $('recentBox'),
+      previewBox = $('previewBox'), previewFrame = $('preview'), previewName = $('previewName');
+
+  // mode: 'init' | 'manifest' | 'probe'
+  var state = { mode: 'init', index: [], recent: [], ver: '' };
+
+  /* ---------- 工具 ---------- */
+  // 归一化：去扩展名、去分隔符、转小写，让 "DD-1001" 和 "dd1001" 等价
+  function normalize(s) {
+    return String(s == null ? '' : s)
+      .replace(/\.(html?|htm)$/i, '')
+      .replace(/[\s\-_#/\\.]/g, '')
+      .toLowerCase();
+  }
+  function displayName(file) {
+    return String(file).replace(/\.(html?|htm)$/i, '');
+  }
+  // 加 ?v= 版本号：微信内置浏览器缓存很重，订单文件更新后必须能拿到新内容
+  function fileUrl(file) {
+    var url = CONFIG.orderDir + encodeURIComponent(file);
+    if (state.ver) url += '?v=' + encodeURIComponent(state.ver);
+    return url;
+  }
+  function readStore(key, fallback) {
+    try {
+      var v = localStorage.getItem(key);
+      return v ? JSON.parse(v) : fallback;
+    } catch (e) { return fallback; }
+  }
+  function writeStore(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+  }
+
+  /* ---------- 主题 ---------- */
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    writeStore(CONFIG.themeKey, t);
+  }
+  applyTheme(readStore(CONFIG.themeKey, 'dark') === 'light' ? 'light' : 'dark');
+
+  /* ---------- 清单加载 ---------- */
+  function buildIndex(files, ver) {
+    var seen = {}, list = [];
+    (files || []).forEach(function (name) {
+      if (!name || seen[name]) return;
+      seen[name] = 1;
+      list.push({ file: name, key: normalize(name), label: displayName(name) });
+    });
+    list.sort(function (a, b) { return a.label.localeCompare(b.label, 'zh-Hans-CN'); });
+    state.index = list;
+    state.ver = ver || String(Date.now());
+    state.mode = 'manifest';
+  }
+
+  function loadManifest() {
+    if (typeof fetch !== 'function') { state.mode = 'probe'; return Promise.resolve(); }
+    return fetch(CONFIG.manifest, { cache: 'no-store' })
+      .then(function (res) { if (!res.ok) throw new Error('404'); return res.json(); })
+      .then(function (data) {
+        var files = Array.isArray(data) ? data : (data && data.files);
+        if (!files || !files.length) throw new Error('empty');
+        buildIndex(files, data && data.generatedAt);
+      })
+      .catch(function () {
+        // 没清单也能用：退化成"按文件名直接探测"模式
+        state.mode = 'probe';
+        state.index = [];
+      });
+  }
+
+  /* ---------- 查询 ---------- */
+  function search(q) {
+    var key = normalize(q);
+    if (!key) return [];
+    if (state.mode !== 'manifest') return [];
+    return state.index.filter(function (o) { return o.key.indexOf(key) !== -1; });
+  }
+
+  // 无清单时，猜文件名并逐个探测
+  function probe(q) {
+    var raw = String(q || '').trim();
+    if (!raw) return Promise.resolve(null);
+    var names = [];
+    if (/\.(html?|htm)$/i.test(raw)) names.push(raw);
+    CONFIG.exts.forEach(function (ext) { names.push(raw + ext); });
+    var tried = {}, chain = Promise.resolve(null);
+    names.forEach(function (name) {
+      if (tried[name]) return;
+      tried[name] = 1;
+      chain = chain.then(function (found) {
+        if (found) return found;
+        var url = CONFIG.orderDir + encodeURIComponent(name);
+        return fetch(url, { method: 'HEAD', cache: 'no-store' })
+          .then(function (res) { return res.ok ? { url: url, file: name } : null; })
+          .catch(function () { return null; });
+      });
+    });
+    return chain;
+  }
+
+  function pushRecent(file) {
+    var list = state.recent.filter(function (f) { return f !== file; });
+    list.unshift(file);
+    state.recent = list.slice(0, CONFIG.maxRecent);
+    writeStore(CONFIG.recentKey, state.recent);
+    renderRecent();
+  }
+
+  /* ---------- 渲染 ---------- */
+  function renderStats() {
+    var html = '';
+    if (state.mode === 'manifest') {
+      html += '<span class="chip">共 <b>' + state.index.length + '</b> 个订单</span>';
+    } else if (state.mode === 'probe') {
+      html += '<span class="chip warn">未找到清单文件，已切换为直连探测模式</span>';
+    } else {
+      html += '<span class="chip">加载中…</span>';
+    }
+    statsEl.innerHTML = html;
+  }
+
+  function renderRecent() {
+    if (!state.recent.length) { recentEl.hidden = true; return; }
+    var html = '<span>最近查询：</span>';
+    state.recent.forEach(function (f) {
+      html += '<a href="#" data-file="' + escapeAttr(f) + '">' + escapeHtml(displayName(f)) + '</a>';
+    });
+    recentEl.innerHTML = html;
+    recentEl.hidden = false;
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+    });
+  }
+  function escapeAttr(s) { return escapeHtml(s); }
+
+  function renderEmpty(msg) {
+    gridEl.innerHTML = '';
+    rtitleEl.hidden = true;
+    emptyEl.innerHTML = msg;
+    emptyEl.hidden = false;
+  }
+
+  function renderList(list, title) {
+    emptyEl.hidden = true;
+    if (!list.length) { renderEmpty('没有匹配到任何订单'); return; }
+    rtitleEl.textContent = title;
+    rtitleEl.hidden = false;
+    var html = '';
+    list.forEach(function (o) {
+      var url = escapeAttr(fileUrl(o.file));
+      html += '<div class="card">'
+        + '<a class="no" href="' + url + '" target="_blank" rel="noopener">' + escapeHtml(o.label) + '</a>'
+        + '<div class="ops">'
+        + '<a href="' + url + '" target="_blank" rel="noopener">打开订单</a>'
+        + '<button type="button" data-preview="' + escapeAttr(o.file) + '">本页查看</button>'
+        + '</div></div>';
+    });
+    gridEl.innerHTML = html;
+  }
+
+  function renderSuggest(list) {
+    if (!list.length) { sugEl.classList.remove('show'); sugEl.innerHTML = ''; return; }
+    var html = '';
+    list.slice(0, CONFIG.maxSuggest).forEach(function (o, i) {
+      html += '<div data-file="' + escapeAttr(o.file) + '" class="' + (i === 0 ? 'active' : '') + '">'
+        + '<span>' + escapeHtml(o.label) + '</span><small>回车打开</small></div>';
+    });
+    sugEl.innerHTML = html;
+    sugEl.classList.add('show');
+  }
+
+  function hideSuggest() { sugEl.classList.remove('show'); }
+
+  /* ---------- 打开 / 预览 ---------- */
+  // 用当前页跳转，不用 window.open —— 微信内置浏览器会拦截弹窗，
+  // 只有 <a> 链接和 location.href 是百分之百走得通的。
+  function openOrder(file) {
+    pushRecent(file);
+    location.href = fileUrl(file);
+  }
+  function previewOrder(file) {
+    pushRecent(file);
+    previewName.textContent = displayName(file);
+    previewFrame.src = fileUrl(file);
+    previewBox.classList.add('show');
+    if (typeof previewBox.scrollIntoView === 'function') {
+      previewBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  /* ---------- 提交 ---------- */
+  function submit() {
+    hideSuggest();
+    var q = qEl.value.trim();
+    if (!q) { renderList(state.index.slice(0, 60), '全部订单（最多显示 60 条）'); return; }
+
+    if (state.mode === 'manifest') {
+      var hits = search(q);
+      var exact = hits.filter(function (o) { return o.key === normalize(q); });
+      if (exact.length === 1) {
+        openOrder(exact[0].file);
+        renderList([exact[0]], '已打开（精确匹配）');
+        return;
+      }
+      renderList(hits, '匹配到 ' + hits.length + ' 个订单：' + escapeHtml(q));
+      return;
+    }
+
+    // 探测模式
+    gridEl.innerHTML = '';
+    rtitleEl.hidden = true;
+    emptyEl.innerHTML = '正在查找…';
+    emptyEl.hidden = false;
+    probe(q).then(function (found) {
+      if (!found) { renderEmpty('没有找到订单 <code>' + escapeHtml(q) + '</code>'); return; }
+      openOrder(found.file);
+      renderList([{ file: found.file, key: normalize(found.file), label: displayName(found.file) }], '已打开');
+    });
+  }
+
+  /* ---------- 事件 ---------- */
+  $('form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    submit();
+  });
+
+  qEl.addEventListener('input', function () {
+    if (state.mode !== 'manifest') { hideSuggest(); return; }
+    var q = qEl.value.trim();
+    if (!q) { hideSuggest(); return; }
+    renderSuggest(search(q));
+  });
+
+  qEl.addEventListener('keydown', function (e) {
+    var items = sugEl.querySelectorAll('div');
+    if (!items.length || !sugEl.classList.contains('show')) return;
+    var active = sugEl.querySelector('div.active');
+    var idx = Array.prototype.indexOf.call(items, active);
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      var next = e.key === 'ArrowDown' ? idx + 1 : idx - 1;
+      if (next < 0) next = items.length - 1;
+      if (next >= items.length) next = 0;
+      if (active) active.classList.remove('active');
+      items[next].classList.add('active');
+    } else if (e.key === 'Enter' && active && e.target === qEl) {
+      // 有候选且已按下方向键选中时，优先打开选中的那一项
+      if (idx > 0) { e.preventDefault(); hideSuggest(); openOrder(active.getAttribute('data-file')); }
+    }
+  });
+
+  sugEl.addEventListener('mousedown', function (e) {
+    var el = e.target.closest ? e.target.closest('[data-file]') : null;
+    if (!el) return;
+    e.preventDefault();
+    hideSuggest();
+    openOrder(el.getAttribute('data-file'));
+  });
+
+  gridEl.addEventListener('click', function (e) {
+    var t = e.target;
+    if (!t || !t.getAttribute) return;
+    if (t.getAttribute('data-open')) openOrder(t.getAttribute('data-open'));
+    else if (t.getAttribute('data-preview')) previewOrder(t.getAttribute('data-preview'));
+  });
+
+  recentEl.addEventListener('click', function (e) {
+    var t = e.target;
+    if (!t || t.tagName !== 'A') return;
+    e.preventDefault();
+    previewOrder(t.getAttribute('data-file'));
+  });
+
+  $('previewClose').addEventListener('click', function () {
+    previewFrame.src = '';
+    previewBox.classList.remove('show');
+  });
+
+  $('themeBtn').addEventListener('click', function () {
+    applyTheme(document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!document.getElementById('form').contains(e.target)) hideSuggest();
+  });
+
+  /* ---------- 启动 ---------- */
+  state.recent = readStore(CONFIG.recentKey, []);
+  renderRecent();
+
+  loadManifest().then(function () {
+    renderStats();
+    // 支持 ?q=订单号 直达
+    var params = new URLSearchParams(location.search);
+    var init = (params.get('q') || params.get('order') || '').trim();
+    if (init) {
+      qEl.value = init;
+      submit();
+    } else if (state.mode === 'manifest') {
+      renderList(state.index.slice(0, 60), '全部订单（最多显示 60 条）');
+    } else {
+      renderEmpty('直接输入订单号查询即可');
+    }
+  }).catch(function () {
+    state.mode = 'probe';
+    renderStats();
+  });
+})();
+</script>
+</body>
+</html>

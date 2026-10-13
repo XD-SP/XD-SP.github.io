@@ -1,6 +1,7 @@
 .workbuddy/
 docs-qr.png
 token.txt
+sync-source.txt
 _smoke*.js
 _chk.js
 _extract.js
